@@ -1,0 +1,34 @@
+# Add build artifacts to gitignore
+.build/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+
+# Swift Package Manager artifacts
+.swiftpm/
+Package.resolved
+
+# Xcode artifacts  
+*.xcuserstate
+*.xcbkptlist
+
+# Firebase sensitive files (but keep the template)
+GoogleService-Info.plist
+
+# Temporary files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Dependencies
+node_modules/
+Pods/
+Carthage/
+
+# Build outputs
+*.app
+*.ipa
+*.dSYM.zip
