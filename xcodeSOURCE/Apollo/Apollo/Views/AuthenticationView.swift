@@ -135,6 +135,8 @@ struct PhoneAuthView: View {
 struct UserTypeSelectionView: View {
     @Environment(\.dismiss) var dismiss
     @State private var selectedUserType: UserType?
+    @State private var showingTutorRegistration = false
+    @State private var showingStudentRegistration = false
     
     var body: some View {
         NavigationView {
@@ -180,8 +182,11 @@ struct UserTypeSelectionView: View {
                 
                 Button("Continue") {
                     if let userType = selectedUserType {
-                        // Navigate to registration based on user type
-                        dismiss()
+                        if userType == .tutor {
+                            showingTutorRegistration = true
+                        } else {
+                            showingStudentRegistration = true
+                        }
                     }
                 }
                 .buttonStyle(PrimaryButtonStyle())
@@ -196,6 +201,16 @@ struct UserTypeSelectionView: View {
                         dismiss()
                     }
                 }
+            }
+        }
+        .sheet(isPresented: $showingTutorRegistration) {
+            TutorSignupFlowView {
+                dismiss()
+            }
+        }
+        .sheet(isPresented: $showingStudentRegistration) {
+            StudentRegistrationView {
+                dismiss()
             }
         }
     }
