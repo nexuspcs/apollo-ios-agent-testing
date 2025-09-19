@@ -41,6 +41,7 @@
 		46B0F6712E5D6E3D00D40FBA /* Exceptions for "Apollo" folder in "ApolloTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				AppConfig.swift,
 				AppViewModel.swift,
 				AuthenticationViewModel.swift,
 				Models.swift,
@@ -57,6 +58,7 @@
 		46B0F6722E5D6E3D00D40FBA /* Exceptions for "Apollo" folder in "ApolloUITests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				AppConfig.swift,
 				AppViewModel.swift,
 				AuthenticationViewModel.swift,
 				Models.swift,

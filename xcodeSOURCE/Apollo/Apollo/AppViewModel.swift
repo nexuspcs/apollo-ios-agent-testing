@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import os.log
 
 @MainActor
 class AppViewModel: ObservableObject {
@@ -11,10 +12,19 @@ class AppViewModel: ObservableObject {
     @Published var errorMessage: String?
     
     private var cancellables = Set<AnyCancellable>()
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "App", category: "AppViewModel")
+    
+    // MARK: - Init
+    
+    init() {
+        AppConfig.load()
+        logger.info("App readyForProduction=\(AppConfig.readyForProduction, privacy: .public), firebase=\(AppConfig.firebaseConfigured, privacy: .public)")
+    }
     
     // MARK: - Tutor Search
     
     func searchTutors(filter: TutorSearchFilter) async {
+        logger.debug("Using mock mode: \(AppConfig.isMockMode, privacy: .public)")
         isLoading = true
         errorMessage = nil
         
@@ -28,6 +38,7 @@ class AppViewModel: ObservableObject {
     }
     
     func loadNearbyTutors(latitude: Double, longitude: Double) async {
+        logger.debug("Using mock mode: \(AppConfig.isMockMode, privacy: .public)")
         isLoading = true
         
         // In real app, this would query tutors by location from Firebase
@@ -39,6 +50,7 @@ class AppViewModel: ObservableObject {
     // MARK: - Session Management
     
     func bookSession(tutorId: String, subjectId: String, duration: SessionDuration, scheduledDateTime: Date, deliveryMode: DeliveryMode, hourlyRate: Double) async -> Bool {
+        logger.debug("Booking session in mock mode: \(AppConfig.isMockMode, privacy: .public)")
         isLoading = true
         errorMessage = nil
         
@@ -71,6 +83,7 @@ class AppViewModel: ObservableObject {
     }
     
     func loadUserSessions(userId: String) async {
+        logger.debug("Using mock mode: \(AppConfig.isMockMode, privacy: .public)")
         isLoading = true
         
         // Load sessions from Firebase
@@ -106,6 +119,7 @@ class AppViewModel: ObservableObject {
     }
     
     func loadConversations(userId: String) async {
+        logger.debug("Using mock mode: \(AppConfig.isMockMode, privacy: .public)")
         isLoading = true
         
         // Load conversations from Firebase
@@ -115,6 +129,7 @@ class AppViewModel: ObservableObject {
     }
     
     func loadMessages(conversationId: String) async {
+        logger.debug("Using mock mode: \(AppConfig.isMockMode, privacy: .public)")
         isLoading = true
         
         // Load messages from Firebase
