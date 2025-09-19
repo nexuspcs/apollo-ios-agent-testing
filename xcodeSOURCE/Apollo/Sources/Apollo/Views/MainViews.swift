@@ -136,22 +136,63 @@ struct StudentProfileView: View {
 
 struct TutorMessagesView: View {
     @EnvironmentObject var appViewModel: AppViewModel
+    @EnvironmentObject var authViewModel: AuthenticationViewModel
     @State private var selectedConversation: Conversation?
+    @State private var searchText = ""
+    
+    var filteredConversations: [Conversation] {
+        if searchText.isEmpty {
+            return appViewModel.conversations
+        } else {
+            return appViewModel.conversations.filter { conversation in
+                // In a real app, you'd filter by student name or last message content
+                conversation.lastMessage?.localizedCaseInsensitiveContains(searchText) ?? false
+            }
+        }
+    }
     
     var body: some View {
         NavigationView {
-            List {
-                ForEach(appViewModel.conversations) { conversation in
-                    Button(action: { selectedConversation = conversation }) {
-                        ConversationRow(conversation: conversation)
+            VStack(spacing: 0) {
+                // Search bar
+                HStack {
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.secondary)
+                        
+                        TextField("Search conversations", text: $searchText)
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8)
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+                
+                if filteredConversations.isEmpty {
+                    EmptyStateView(
+                        icon: "message",
+                        title: searchText.isEmpty ? "No conversations yet" : "No matching conversations",
+                        subtitle: searchText.isEmpty ? "Start chatting with students!" : "Try a different search term"
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    List {
+                        ForEach(filteredConversations) { conversation in
+                            Button(action: { selectedConversation = conversation }) {
+                                EnhancedConversationRow(conversation: conversation)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .listStyle(PlainListStyle())
                 }
             }
             .navigationTitle("Messages")
             .onAppear {
                 Task {
-                    await appViewModel.loadConversations(userId: "current_user_id")
+                    await appViewModel.loadConversations(userId: authViewModel.currentUser?.id ?? "")
                 }
             }
             .sheet(item: $selectedConversation) { conversation in
@@ -161,22 +202,121 @@ struct TutorMessagesView: View {
     }
 }
 
+struct EnhancedConversationRow: View {
+    let conversation: Conversation
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Student avatar
+            Circle()
+                .fill(Color.blue.opacity(0.1))
+                .frame(width: 50, height: 50)
+                .overlay(
+                    Text("S") // In real app, would use student's first letter
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.blue)
+                )
+            
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Student Name") // In real app, would show actual student name
+                        .font(.headline)
+                        .fontWeight(.medium)
+                    
+                    Spacer()
+                    
+                    if let timestamp = conversation.lastMessageTimestamp {
+                        Text(timestamp.formatted(.dateTime.month().day().hour().minute()))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                HStack {
+                    Text(conversation.lastMessage ?? "No messages yet")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                    
+                    Spacer()
+                    
+                    if conversation.unreadCount > 0 {
+                        Text("\(conversation.unreadCount)")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .frame(width: 20, height: 20)
+                            .background(Color.blue)
+                            .clipShape(Circle())
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+    }
+}
+
 struct TutorDashboardView: View {
     @EnvironmentObject var appViewModel: AppViewModel
+    @EnvironmentObject var authViewModel: AuthenticationViewModel
+    @State private var showingEarningsAnalytics = false
+    @State private var showingAvailabilitySettings = false
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
+                    // Welcome section
+                    if let tutor = authViewModel.currentTutor, let user = authViewModel.currentUser {
+                        TutorWelcomeCard(tutorName: user.firstName, isStripeConnected: tutor.isStripeConnected)
+                    }
+                    
+                    // Quick actions
+                    QuickActionsGrid(
+                        onEarningsAnalytics: { showingEarningsAnalytics = true },
+                        onAvailabilitySettings: { showingAvailabilitySettings = true }
+                    )
+                    
                     // Earnings summary
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Earnings")
-                            .font(.title2)
-                            .fontWeight(.bold)
+                        HStack {
+                            Text("Earnings")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                            
+                            Spacer()
+                            
+                            Button("View Details") {
+                                showingEarningsAnalytics = true
+                            }
+                            .font(.subheadline)
+                            .foregroundColor(.blue)
+                        }
                         
                         HStack(spacing: 20) {
                             EarningsCard(title: "This Week", amount: 450.00, color: .green)
                             EarningsCard(title: "This Month", amount: 1850.00, color: .blue)
+                        }
+                    }
+                    
+                    // Booking requests
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Booking Requests")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        if mockBookingRequests.isEmpty {
+                            EmptyStateView(
+                                icon: "bell",
+                                title: "No new booking requests",
+                                subtitle: "We'll notify you when students want to book sessions"
+                            )
+                        } else {
+                            ForEach(mockBookingRequests, id: \.id) { request in
+                                BookingRequestCard(request: request)
+                            }
                         }
                     }
                     
@@ -213,8 +353,254 @@ struct TutorDashboardView: View {
                 .padding(.horizontal, 16)
             }
             .navigationTitle("Dashboard")
+            .sheet(isPresented: $showingEarningsAnalytics) {
+                EarningsAnalyticsView()
+            }
+            .sheet(isPresented: $showingAvailabilitySettings) {
+                TutorAvailabilityView()
+            }
+        }
+        .onAppear {
+            Task {
+                await appViewModel.loadUserSessions(userId: authViewModel.currentUser?.id ?? "")
+            }
         }
     }
+    
+    private var mockBookingRequests: [BookingRequest] {
+        [
+            BookingRequest(
+                id: "req1",
+                studentName: "Sarah M.",
+                subject: "Mathematics Advanced",
+                preferredDateTime: Calendar.current.date(byAdding: .day, value: 2, to: Date()) ?? Date(),
+                duration: .oneHour,
+                deliveryMode: .online,
+                message: "Hi! I need help with calculus for my upcoming exam."
+            ),
+            BookingRequest(
+                id: "req2",
+                studentName: "James L.",
+                subject: "Physics",
+                preferredDateTime: Calendar.current.date(byAdding: .day, value: 3, to: Date()) ?? Date(),
+                duration: .twoHours,
+                deliveryMode: .inPerson,
+                message: "Looking for help with kinematics and dynamics."
+            )
+        ]
+    }
+}
+
+// MARK: - Supporting Views for Enhanced Dashboard
+
+struct TutorWelcomeCard: View {
+    let tutorName: String
+    let isStripeConnected: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Welcome back, \(tutorName)! 👋")
+                .font(.title3)
+                .fontWeight(.semibold)
+            
+            if !isStripeConnected {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.orange)
+                        .font(.caption)
+                    
+                    Text("Complete your Stripe setup to receive payments")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    Button("Set up") {
+                        // Handle Stripe setup
+                    }
+                    .font(.caption)
+                    .foregroundColor(.blue)
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
+    }
+}
+
+struct QuickActionsGrid: View {
+    let onEarningsAnalytics: () -> Void
+    let onAvailabilitySettings: () -> Void
+    
+    var body: some View {
+        LazyVGrid(columns: [
+            GridItem(.flexible()),
+            GridItem(.flexible())
+        ], spacing: 12) {
+            QuickActionCard(
+                icon: "chart.bar.fill",
+                title: "Analytics",
+                subtitle: "View earnings",
+                color: .blue
+            ) {
+                onEarningsAnalytics()
+            }
+            
+            QuickActionCard(
+                icon: "calendar.badge.plus",
+                title: "Availability",
+                subtitle: "Set schedule",
+                color: .green
+            ) {
+                onAvailabilitySettings()
+            }
+            
+            QuickActionCard(
+                icon: "person.badge.plus",
+                title: "Students",
+                subtitle: "Manage students",
+                color: .purple
+            ) {
+                // Handle students management
+            }
+            
+            QuickActionCard(
+                icon: "bell.fill",
+                title: "Notifications",
+                subtitle: "Settings",
+                color: .orange
+            ) {
+                // Handle notifications
+            }
+        }
+    }
+}
+
+struct QuickActionCard: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let color: Color
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.title2)
+                    .foregroundColor(color)
+                
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+            .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+        }
+    }
+}
+
+struct BookingRequestCard: View {
+    let request: BookingRequest
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Circle()
+                    .fill(Color.blue.opacity(0.1))
+                    .frame(width: 40, height: 40)
+                    .overlay(
+                        Text(String(request.studentName.prefix(1)))
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.blue)
+                    )
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(request.studentName)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    
+                    Text(request.subject)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                Text(request.preferredDateTime.formatted(.dateTime.month().day().hour().minute()))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Text(request.message)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .lineLimit(2)
+            
+            HStack(spacing: 8) {
+                Button("Accept") {
+                    // Handle accept
+                }
+                .buttonStyle(CompactButtonStyle(backgroundColor: .green))
+                
+                Button("Decline") {
+                    // Handle decline
+                }
+                .buttonStyle(CompactButtonStyle(backgroundColor: .red))
+                
+                Spacer()
+                
+                Button("Message") {
+                    // Handle message
+                }
+                .buttonStyle(CompactButtonStyle(backgroundColor: .blue))
+            }
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
+    }
+}
+
+struct CompactButtonStyle: ButtonStyle {
+    let backgroundColor: Color
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.caption)
+            .fontWeight(.medium)
+            .foregroundColor(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(backgroundColor)
+            .cornerRadius(8)
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Data Models
+
+struct BookingRequest {
+    let id: String
+    let studentName: String
+    let subject: String
+    let preferredDateTime: Date
+    let duration: SessionDuration
+    let deliveryMode: DeliveryMode
+    let message: String
+}
 }
 
 struct TutorScheduleView: View {

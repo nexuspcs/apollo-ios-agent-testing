@@ -145,6 +145,24 @@ class AuthenticationViewModel: ObservableObject {
         self.isLoading = false
     }
     
+    func registerStudent(firstName: String, lastName: String, phoneNumber: String, yearLevel: YearLevel, suburb: String, subjects: [String]) async {
+        self.isLoading = true
+        self.errorMessage = nil
+        
+        // Mock registration - in production would save to Firebase
+        let user = User(id: "mock_student_id", firstName: firstName, lastName: lastName, email: "", phoneNumber: phoneNumber, userType: .student)
+        let student = Student(userId: "mock_student_id", yearLevel: yearLevel, subjects: subjects, suburb: suburb)
+        
+        self.currentUser = user
+        self.currentStudent = student
+        self.isAuthenticated = true
+        self.persistAuthState()
+        
+        self.isLoading = false
+        
+        self.logger.info("Student registered successfully: \(firstName) \(lastName)")
+    }
+    
     func updateTutorAvailability(_ availability: TutorAvailability) {
         if var tutor = self.currentTutor {
             // Update availability in the current tutor object
