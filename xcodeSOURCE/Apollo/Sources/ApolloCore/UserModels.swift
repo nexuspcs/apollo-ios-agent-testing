@@ -56,7 +56,7 @@ struct Tutor: Codable, Identifiable {
     let isVerified: Bool
     let isStripeConnected: Bool
     let stripeAccountId: String?
-    let availability: TutorAvailability
+    var availability: TutorAvailability
     let rating: Double
     let totalSessions: Int
     
