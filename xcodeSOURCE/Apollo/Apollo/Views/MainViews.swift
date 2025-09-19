@@ -642,123 +642,123 @@ struct EmptyStateView: View {
     }
 }
 
-struct MessageView: View {
-    let recipientId: String
-    @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var appViewModel: AppViewModel
-    @State private var messageText = ""
-    @State private var messages: [Message] = []
-    
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Messages list
-                ScrollView {
-                    LazyVStack(spacing: 12) {
-                        ForEach(messages) { message in
-                            MessageBubble(message: message, isFromCurrentUser: message.senderId == "current_user_id")
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                }
-                
-                // Message input
-                HStack(spacing: 12) {
-                    TextField("Type a message...", text: $messageText, axis: .vertical)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .lineLimit(1...4)
-                    
-                    Button("Send") {
-                        sendMessage()
-                    }
-                    .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(Color(.systemBackground))
-            }
-            .navigationTitle("Messages")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Close") {
-                        dismiss()
-                    }
-                }
-            }
-            .onAppear {
-                loadMessages()
-            }
-        }
-    }
-    
-    private func sendMessage() {
-        let content = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !content.isEmpty else { return }
-        
-        let message = Message(
-            conversationId: "conversation_id",
-            senderId: "current_user_id",
-            recipientId: recipientId,
-            content: content
-        )
-        
-        messages.append(message)
-        messageText = ""
-        
-        Task {
-            await appViewModel.sendMessage(to: recipientId, content: content)
-        }
-    }
-    
-    private func loadMessages() {
-        // Load mock messages
-        messages = [
-            Message(
-                conversationId: "conversation_id",
-                senderId: recipientId,
-                recipientId: "current_user_id",
-                content: "Hi! How can I help you with your studies?"
-            ),
-            Message(
-                conversationId: "conversation_id",
-                senderId: "current_user_id",
-                recipientId: recipientId,
-                content: "I'm struggling with calculus. Do you have any availability this week?"
-            )
-        ]
-    }
-}
+//struct MessageView: View {
+//    let recipientId: String
+//    @Environment(\.dismiss) var dismiss
+//    @EnvironmentObject var appViewModel: AppViewModel
+//    @State private var messageText = ""
+//    @State private var messages: [Message] = []
+//    
+//    var body: some View {
+//        NavigationView {
+//            VStack(spacing: 0) {
+//                // Messages list
+//                ScrollView {
+//                    LazyVStack(spacing: 12) {
+//                        ForEach(messages) { message in
+//                            MessageBubble(message: message, isFromCurrentUser: message.senderId == "current_user_id")
+//                        }
+//                    }
+//                    .padding(.horizontal, 16)
+//                }
+//                
+//                // Message input
+//                HStack(spacing: 12) {
+//                    TextField("Type a message...", text: $messageText, axis: .vertical)
+//                        .textFieldStyle(RoundedBorderTextFieldStyle())
+//                        .lineLimit(1...4)
+//                    
+//                    Button("Send") {
+//                        sendMessage()
+//                    }
+//                    .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+//                }
+//                .padding(.horizontal, 16)
+//                .padding(.vertical, 12)
+//                .background(Color(.systemBackground))
+//            }
+//            .navigationTitle("Messages")
+//            .navigationBarTitleDisplayMode(.inline)
+//            .toolbar {
+//                ToolbarItem(placement: .navigationBarLeading) {
+//                    Button("Close") {
+//                        dismiss()
+//                    }
+//                }
+//            }
+//            .onAppear {
+//                loadMessages()
+//            }
+//        }
+//    }
+//    
+//    private func sendMessage() {
+//        let content = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
+//        guard !content.isEmpty else { return }
+//        
+//        let message = Message(
+//            conversationId: "conversation_id",
+//            senderId: "current_user_id",
+//            recipientId: recipientId,
+//            content: content
+//        )
+//        
+//        messages.append(message)
+//        messageText = ""
+//        
+//        Task {
+//            await appViewModel.sendMessage(to: recipientId, content: content)
+//        }
+//    }
+//    
+//    private func loadMessages() {
+//        // Load mock messages
+//        messages = [
+//            Message(
+//                conversationId: "conversation_id",
+//                senderId: recipientId,
+//                recipientId: "current_user_id",
+//                content: "Hi! How can I help you with your studies?"
+//            ),
+//            Message(
+//                conversationId: "conversation_id",
+//                senderId: "current_user_id",
+//                recipientId: recipientId,
+//                content: "I'm struggling with calculus. Do you have any availability this week?"
+//            )
+//        ]
+//    }
+//}
 
-struct MessageBubble: View {
-    let message: Message
-    let isFromCurrentUser: Bool
-    
-    var body: some View {
-        HStack {
-            if isFromCurrentUser {
-                Spacer()
-            }
-            
-            VStack(alignment: isFromCurrentUser ? .trailing : .leading, spacing: 4) {
-                Text(message.content)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(isFromCurrentUser ? Color.blue : Color(.systemGray5))
-                    .foregroundColor(isFromCurrentUser ? .white : .primary)
-                    .cornerRadius(18)
-                
-                Text(message.timestamp.formatted(.dateTime.hour().minute()))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
-            
-            if !isFromCurrentUser {
-                Spacer()
-            }
-        }
-    }
-}
+//struct MessageBubble: View {
+//    let message: Message
+//    let isFromCurrentUser: Bool
+//    
+//    var body: some View {
+//        HStack {
+//            if isFromCurrentUser {
+//                Spacer()
+//            }
+//            
+//            VStack(alignment: isFromCurrentUser ? .trailing : .leading, spacing: 4) {
+//                Text(message.content)
+//                    .padding(.horizontal, 16)
+//                    .padding(.vertical, 12)
+//                    .background(isFromCurrentUser ? Color.blue : Color(.systemGray5))
+//                    .foregroundColor(isFromCurrentUser ? .white : .primary)
+//                    .cornerRadius(18)
+//                
+//                Text(message.timestamp.formatted(.dateTime.hour().minute()))
+//                    .font(.caption2)
+//                    .foregroundColor(.secondary)
+//            }
+//            
+//            if !isFromCurrentUser {
+//                Spacer()
+//            }
+//        }
+//    }
+//}
 
 // MARK: - Enhanced Dashboard Components
 
