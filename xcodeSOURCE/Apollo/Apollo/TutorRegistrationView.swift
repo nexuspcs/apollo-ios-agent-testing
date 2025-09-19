@@ -132,8 +132,8 @@ struct TutorRegistrationView: View {
             phoneNumber: phoneNumber.trimmingCharacters(in: .whitespaces),
             subjects: Array(selectedSubjects),
             educationLevel: educationLevel,
-            deliveryMode: deliveryMode,
             hourlyRate: rateDouble,
+            deliveryMode: deliveryMode,
             suburb: suburb.trimmingCharacters(in: .whitespaces)
         )
         

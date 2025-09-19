@@ -114,7 +114,7 @@ struct StripeConnectView: View {
             Button("Continue") {
                 dismiss()
             }
-            .buttonStyle(PrimaryButtonStyle())
+            .buttonStyle(PrimaryButtonStyleUno())
         }
     }
     
@@ -191,7 +191,7 @@ struct BenefitRow: View {
     }
 }
 
-struct PrimaryButtonStyle: ButtonStyle {
+struct PrimaryButtonStyleUno: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .frame(maxWidth: .infinity)
