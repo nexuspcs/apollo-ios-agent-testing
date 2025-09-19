@@ -35,7 +35,10 @@ struct TutorAvailabilityView: View {
         if let encoded = try? JSONEncoder().encode(availability) {
             UserDefaults.standard.set(encoded, forKey: userDefaultsKey(for: userId))
         }
-        authViewModel.currentTutor?.availability = availability
+        if var tutor = authViewModel.currentTutor {
+            tutor.availability = availability
+            authViewModel.currentTutor = tutor
+        }
     }
 
     private func stringToDate(_ time: String) -> Date? {
@@ -169,19 +172,23 @@ struct TutorAvailabilityView_Previews: PreviewProvider {
     class MockAuthVM: AuthenticationViewModel {
         override init() {
             super.init()
-            let mockTutor = Tutor(
-                id: "mockTutor123",
-                name: "Mock Tutor",
-                availability: TutorAvailability(availability: [
-                    .monday: [
-                        TimeSlot(start: "09:00", end: "10:00"),
-                        TimeSlot(start: "14:00", end: "15:30")
-                    ],
-                    .wednesday: [
-                        TimeSlot(start: "11:00", end: "12:00")
-                    ]
-                ])
+            var mockTutor = Tutor(
+                userId: "mockTutor123",
+                subjects: ["math-advanced", "physics"],
+                educationLevel: .university,
+                hourlyRate: 45.0,
+                deliveryMode: .both,
+                suburb: "Sydney"
             )
+            mockTutor.availability = TutorAvailability(availability: [
+                .monday: [
+                    TimeSlot(start: "09:00", end: "10:00"),
+                    TimeSlot(start: "14:00", end: "15:30")
+                ],
+                .wednesday: [
+                    TimeSlot(start: "11:00", end: "12:00")
+                ]
+            ])
             self.currentTutor = mockTutor
         }
     }
