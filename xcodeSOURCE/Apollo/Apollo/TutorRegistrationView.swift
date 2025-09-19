@@ -16,6 +16,7 @@ struct TutorRegistrationView: View {
 
     @State private var isSaving = false
     @State private var errorMessage: String?
+    @State private var showingStripeConnect = false
 
     var body: some View {
         NavigationView {
@@ -48,7 +49,7 @@ struct TutorRegistrationView: View {
                     }
                 }
                 Section(header: Text("Rate & Location")) {
-                    TextField("Hourly Rate", text: $hourlyRate)
+                    TextField("Hourly Rate ($)", text: $hourlyRate)
                         .keyboardType(.decimalPad)
                     TextField("Suburb", text: $suburb)
                         .autocapitalization(.words)
@@ -69,7 +70,7 @@ struct TutorRegistrationView: View {
                             ProgressView()
                                 .frame(maxWidth: .infinity, alignment: .center)
                         } else {
-                            Text("Save")
+                            Text("Register as Tutor")
                                 .frame(maxWidth: .infinity, alignment: .center)
                         }
                     }
@@ -85,12 +86,23 @@ struct TutorRegistrationView: View {
                 }
             }
         }
+        .sheet(isPresented: $showingStripeConnect) {
+            StripeConnectView()
+        }
     }
 
     private func save() async {
         errorMessage = nil
         guard !firstName.trimmingCharacters(in: .whitespaces).isEmpty else {
             errorMessage = "First name is required."
+            return
+        }
+        guard !lastName.trimmingCharacters(in: .whitespaces).isEmpty else {
+            errorMessage = "Last name is required."
+            return
+        }
+        guard !email.trimmingCharacters(in: .whitespaces).isEmpty else {
+            errorMessage = "Email is required."
             return
         }
         guard !phoneNumber.trimmingCharacters(in: .whitespaces).isEmpty else {
@@ -101,9 +113,18 @@ struct TutorRegistrationView: View {
             errorMessage = "Please select at least one subject."
             return
         }
+        guard let rateDouble = Double(hourlyRate), rateDouble > 0 else {
+            errorMessage = "Please enter a valid hourly rate."
+            return
+        }
+        guard !suburb.trimmingCharacters(in: .whitespaces).isEmpty else {
+            errorMessage = "Suburb is required."
+            return
+        }
+        
         isSaving = true
         defer { isSaving = false }
-        let rateDouble = Double(hourlyRate)
+        
         await authViewModel.registerTutor(
             firstName: firstName.trimmingCharacters(in: .whitespaces),
             lastName: lastName.trimmingCharacters(in: .whitespaces),
@@ -115,7 +136,9 @@ struct TutorRegistrationView: View {
             hourlyRate: rateDouble,
             suburb: suburb.trimmingCharacters(in: .whitespaces)
         )
-        dismiss()
+        
+        // Show Stripe Connect after successful registration
+        showingStripeConnect = true
     }
 }
 

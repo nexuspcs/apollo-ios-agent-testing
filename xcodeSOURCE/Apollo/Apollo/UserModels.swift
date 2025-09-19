@@ -83,38 +83,22 @@ struct Tutor: Codable, Identifiable {
 
 // MARK: - Tutor Availability
 struct TutorAvailability: Codable {
-    var monday: [TimeSlot]
-    var tuesday: [TimeSlot]
-    var wednesday: [TimeSlot]
-    var thursday: [TimeSlot]
-    var friday: [TimeSlot]
-    var saturday: [TimeSlot]
-    var sunday: [TimeSlot]
+    var availability: [DayOfWeek: [TimeSlot]]
     
-    init() {
-        self.monday = []
-        self.tuesday = []
-        self.wednesday = []
-        self.thursday = []
-        self.friday = []
-        self.saturday = []
-        self.sunday = []
+    init(availability: [DayOfWeek: [TimeSlot]] = [:]) {
+        self.availability = availability
     }
     
     func availabilityForDay(_ day: DayOfWeek) -> [TimeSlot] {
-        switch day {
-        case .monday: return monday
-        case .tuesday: return tuesday
-        case .wednesday: return wednesday
-        case .thursday: return thursday
-        case .friday: return friday
-        case .saturday: return saturday
-        case .sunday: return sunday
-        }
+        return availability[day] ?? []
+    }
+    
+    mutating func setAvailability(for day: DayOfWeek, slots: [TimeSlot]) {
+        availability[day] = slots
     }
 }
 
-enum DayOfWeek: String, CaseIterable, Codable {
+enum DayOfWeek: String, CaseIterable, Codable, Identifiable {
     case monday = "Monday"
     case tuesday = "Tuesday"
     case wednesday = "Wednesday"
@@ -122,16 +106,24 @@ enum DayOfWeek: String, CaseIterable, Codable {
     case friday = "Friday"
     case saturday = "Saturday"
     case sunday = "Sunday"
+    
+    var id: String { rawValue }
+    
+    var displayName: String { rawValue }
 }
 
 struct TimeSlot: Codable, Identifiable {
     let id: String
-    let startTime: String // Format: "HH:mm"
-    let endTime: String // Format: "HH:mm"
+    let start: String // Format: "HH:mm"
+    let end: String // Format: "HH:mm"
     
-    init(startTime: String, endTime: String) {
+    init(start: String, end: String) {
         self.id = UUID().uuidString
-        self.startTime = startTime
-        self.endTime = endTime
+        self.start = start
+        self.end = end
     }
+    
+    // Backward compatibility
+    var startTime: String { start }
+    var endTime: String { end }
 }
