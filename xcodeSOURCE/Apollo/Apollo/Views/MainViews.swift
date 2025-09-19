@@ -163,56 +163,195 @@ struct TutorMessagesView: View {
 
 struct TutorDashboardView: View {
     @EnvironmentObject var appViewModel: AppViewModel
+    @State private var showingEarningsAnalytics = false
+    @State private var showingAvailability = false
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
+                    // Quick actions
+                    quickActionsSection
+                    
                     // Earnings summary
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Earnings")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                        
-                        HStack(spacing: 20) {
-                            EarningsCard(title: "This Week", amount: 450.00, color: .green)
-                            EarningsCard(title: "This Month", amount: 1850.00, color: .blue)
-                        }
-                    }
+                    earningsSection
                     
                     // Upcoming sessions
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Upcoming Sessions")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                        
-                        if appViewModel.sessions.isEmpty {
-                            EmptyStateView(
-                                icon: "calendar",
-                                title: "No upcoming sessions",
-                                subtitle: "Students will book sessions with you soon!"
-                            )
-                        } else {
-                            ForEach(appViewModel.sessions) { session in
-                                SessionCard(session: session)
-                            }
-                        }
-                    }
+                    upcomingSessionsSection
                     
                     // Recent students
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Your Students")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                        
-                        Text("3 active students")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
+                    studentsSection
+                    
+                    // Performance metrics
+                    performanceSection
                 }
                 .padding(.horizontal, 16)
             }
             .navigationTitle("Dashboard")
+            .refreshable {
+                // Refresh data
+                Task {
+                    await appViewModel.loadUserSessions(userId: "current_user_id")
+                }
+            }
+        }
+        .sheet(isPresented: $showingEarningsAnalytics) {
+            EarningsAnalyticsView()
+        }
+        .sheet(isPresented: $showingAvailability) {
+            TutorAvailabilityView()
+        }
+    }
+    
+    private var quickActionsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Quick Actions")
+                .font(.headline)
+                .fontWeight(.semibold)
+            
+            HStack(spacing: 12) {
+                QuickActionButton(
+                    title: "Set Availability",
+                    icon: "calendar",
+                    color: .blue
+                ) {
+                    showingAvailability = true
+                }
+                
+                QuickActionButton(
+                    title: "View Earnings",
+                    icon: "chart.bar",
+                    color: .green
+                ) {
+                    showingEarningsAnalytics = true
+                }
+                
+                QuickActionButton(
+                    title: "Messages",
+                    icon: "message",
+                    color: .orange
+                ) {
+                    // Navigate to messages
+                }
+            }
+        }
+    }
+    
+    private var earningsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Earnings")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                
+                Spacer()
+                
+                Button("View Analytics") {
+                    showingEarningsAnalytics = true
+                }
+                .font(.subheadline)
+                .foregroundColor(.blue)
+            }
+            
+            HStack(spacing: 20) {
+                EarningsCard(title: "This Week", amount: 450.00, color: .green)
+                EarningsCard(title: "This Month", amount: 1850.00, color: .blue)
+            }
+            
+            // Earnings trend indicator
+            HStack {
+                Image(systemName: "arrow.up.right")
+                    .font(.caption)
+                    .foregroundColor(.green)
+                Text("+12.3% vs last week")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+    
+    private var upcomingSessionsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Upcoming Sessions")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                
+                Spacer()
+                
+                if !appViewModel.sessions.isEmpty {
+                    Text("\(appViewModel.sessions.count) sessions")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            if appViewModel.sessions.isEmpty {
+                EmptyStateView(
+                    icon: "calendar",
+                    title: "No upcoming sessions",
+                    subtitle: "Students will book sessions with you soon!"
+                )
+            } else {
+                ForEach(appViewModel.sessions.prefix(3)) { session in
+                    SessionCard(session: session)
+                }
+                
+                if appViewModel.sessions.count > 3 {
+                    Button("View All Sessions") {
+                        // Navigate to full schedule
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+                }
+            }
+        }
+    }
+    
+    private var studentsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Your Students")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                
+                Spacer()
+                
+                Text("3 active")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(0..<3) { index in
+                        StudentCard(
+                            name: ["Sarah M.", "James L.", "Emma R."][index],
+                            subject: ["Mathematics", "Physics", "Chemistry"][index],
+                            nextSession: Calendar.current.date(byAdding: .day, value: index + 1, to: Date()) ?? Date()
+                        )
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+    }
+    
+    private var performanceSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Performance")
+                .font(.title2)
+                .fontWeight(.bold)
+            
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 12) {
+                PerformanceCard(title: "Rating", value: "4.8", icon: "star.fill", color: .orange)
+                PerformanceCard(title: "Response", value: "98%", icon: "message.fill", color: .blue)
+                PerformanceCard(title: "Sessions", value: "89", icon: "calendar", color: .green)
+                PerformanceCard(title: "Students", value: "24", icon: "person.2.fill", color: .purple)
+            }
         }
     }
 }
@@ -248,6 +387,9 @@ struct TutorScheduleView: View {
 
 struct TutorProfileView: View {
     @EnvironmentObject var authViewModel: AuthenticationViewModel
+    @State private var showingAvailability = false
+    @State private var showingStripeConnect = false
+    @State private var showingEarningsAnalytics = false
     
     var body: some View {
         NavigationView {
@@ -261,12 +403,21 @@ struct TutorProfileView: View {
                         VStack(alignment: .leading) {
                             Text(authViewModel.currentUser?.firstName ?? "Tutor")
                                 .font(.headline)
-                            Text("Mathematics & Physics")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                            if let tutor = authViewModel.currentTutor {
+                                Text("\(tutor.subjects.count) subjects • \(tutor.suburb)")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                         
                         Spacer()
+                        
+                        // Verification badge
+                        if authViewModel.currentTutor?.isVerified == true {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.title3)
+                                .foregroundColor(.blue)
+                        }
                     }
                     .padding(.vertical, 8)
                 }
@@ -274,20 +425,33 @@ struct TutorProfileView: View {
                 Section("Tutor Profile") {
                     NavigationLink("Edit Profile", destination: Text("Edit Profile"))
                     NavigationLink("Subjects & Rates", destination: Text("Subjects & Rates"))
-                    NavigationLink("Availability", destination: Text("Availability"))
-                    NavigationLink("Stripe Account", destination: Text("Stripe Account"))
+                    
+                    Button("Availability") {
+                        showingAvailability = true
+                    }
+                    .foregroundColor(.primary)
+                    
+                    Button("Payment Setup") {
+                        showingStripeConnect = true
+                    }
+                    .foregroundColor(.primary)
                 }
                 
                 Section("Performance") {
-                    NavigationLink("Earnings", destination: Text("Earnings"))
+                    Button("Earnings Analytics") {
+                        showingEarningsAnalytics = true
+                    }
+                    .foregroundColor(.primary)
+                    
                     NavigationLink("Reviews", destination: Text("Reviews"))
                     NavigationLink("Statistics", destination: Text("Statistics"))
                 }
                 
-                Section("Support") {
+                Section("Settings") {
+                    NavigationLink("Notifications", destination: Text("Notifications"))
+                    NavigationLink("Privacy", destination: Text("Privacy"))
                     NavigationLink("Help Center", destination: Text("Help Center"))
                     NavigationLink("Contact Support", destination: Text("Contact Support"))
-                    NavigationLink("Terms & Conditions", destination: Text("Terms & Conditions"))
                 }
                 
                 Section {
@@ -298,6 +462,15 @@ struct TutorProfileView: View {
                 }
             }
             .navigationTitle("Profile")
+        }
+        .sheet(isPresented: $showingAvailability) {
+            TutorAvailabilityView()
+        }
+        .sheet(isPresented: $showingStripeConnect) {
+            StripeConnectView()
+        }
+        .sheet(isPresented: $showingEarningsAnalytics) {
+            EarningsAnalyticsView()
         }
     }
 }
@@ -584,6 +757,108 @@ struct MessageBubble: View {
                 Spacer()
             }
         }
+    }
+}
+
+// MARK: - Enhanced Dashboard Components
+
+struct QuickActionButton: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.title2)
+                    .foregroundColor(color)
+                
+                Text(title)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 80)
+            .background(color.opacity(0.1))
+            .cornerRadius(12)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct StudentCard: View {
+    let name: String
+    let subject: String
+    let nextSession: Date
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Circle()
+                    .fill(Color.blue.opacity(0.1))
+                    .frame(width: 40, height: 40)
+                    .overlay(
+                        Text(String(name.prefix(1)))
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.blue)
+                    )
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(name)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    
+                    Text(subject)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+            }
+            
+            Text("Next: \(nextSession.formatted(.dateTime.month().day().hour().minute()))")
+                .font(.caption)
+                .foregroundColor(.blue)
+        }
+        .padding(12)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+        .frame(width: 180)
+    }
+}
+
+struct PerformanceCard: View {
+    let title: String
+    let value: String
+    let icon: String
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundColor(color)
+                Spacer()
+            }
+            
+            Text(value)
+                .font(.title2)
+                .fontWeight(.bold)
+            
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding(16)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
 }
 

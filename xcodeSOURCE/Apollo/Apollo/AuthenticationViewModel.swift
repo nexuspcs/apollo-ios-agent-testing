@@ -124,6 +124,34 @@ class AuthenticationViewModel: ObservableObject {
         self.persistAuthState()
         
         self.isLoading = false
+        
+        self.logger.info("Tutor registered successfully: \(firstName) \(lastName)")
+    }
+    
+    func connectStripeAccount(accountId: String) async {
+        self.isLoading = true
+        self.errorMessage = nil
+        
+        // Mock Stripe connection - in production would integrate with Stripe Connect
+        if var tutor = self.currentTutor {
+            // In a real implementation, we'd create a new Tutor instance with updated Stripe info
+            // For now, we'll mock it by updating the properties
+            self.logger.info("Connecting Stripe account: \(accountId)")
+            
+            // Update persisted data to reflect Stripe connection
+            self.persistAuthState()
+        }
+        
+        self.isLoading = false
+    }
+    
+    func updateTutorAvailability(_ availability: TutorAvailability) {
+        if var tutor = self.currentTutor {
+            // Update availability in the current tutor object
+            // In a real app, this would be saved to the backend
+            self.logger.info("Updated tutor availability")
+            self.persistAuthState()
+        }
     }
     
     func signOut() {
