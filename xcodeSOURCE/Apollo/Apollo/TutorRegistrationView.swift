@@ -142,7 +142,7 @@ struct TutorRegistrationView: View {
     }
 }
 
-private struct SubjectsMultiSelectView: View {
+struct SubjectsMultiSelectView: View {
     @Binding var selectedSubjects: Set<String>
 
     var body: some View {
